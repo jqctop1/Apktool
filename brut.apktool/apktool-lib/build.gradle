@@ -45,3 +45,5 @@ dependencies {
 
     testCompile depends.xmlunit
 }
+
+apply plugin: 'com.github.johnrengelman.shadow'
