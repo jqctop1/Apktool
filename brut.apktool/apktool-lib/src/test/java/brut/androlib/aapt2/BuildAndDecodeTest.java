@@ -1,6 +1,6 @@
 /**
- *  Copyright (C) 2018 Ryszard Wiśniewski <brut.alll@gmail.com>
- *  Copyright (C) 2018 Connor Tumbleson <connor.tumbleson@gmail.com>
+ *  Copyright (C) 2019 Ryszard Wiśniewski <brut.alll@gmail.com>
+ *  Copyright (C) 2019 Connor Tumbleson <connor.tumbleson@gmail.com>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 
 import static org.junit.Assert.*;
 
@@ -74,6 +75,11 @@ public class BuildAndDecodeTest extends BaseTest {
     }
 
     @Test
+    public void valuesMaxLengthTest() throws BrutException {
+        compareValuesFiles("values-es/strings.xml");
+    }
+
+    @Test
     public void confirmZeroByteFileIsNotStored() throws BrutException {
         MetaInfo metaInfo = new Androlib().readMetaFile(sTestNewDir);
         assertNull(metaInfo.doNotCompress);
@@ -95,7 +101,17 @@ public class BuildAndDecodeTest extends BaseTest {
     }
 
     @Test
+    public void samsungQmgFilesHandledTest() throws IOException, BrutException {
+        compareBinaryFolder("drawable-xhdpi", true);
+    }
+
+    @Test
     public void confirmManifestStructureTest() throws BrutException {
         compareXmlFiles("AndroidManifest.xml");
+    }
+
+    @Test
+    public void xmlXsdFileTest() throws BrutException {
+        compareXmlFiles("res/xml/ww_box_styles_schema.xsd");
     }
 }

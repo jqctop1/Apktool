@@ -1,6 +1,6 @@
 /**
- *  Copyright (C) 2018 Ryszard Wiśniewski <brut.alll@gmail.com>
- *  Copyright (C) 2018 Connor Tumbleson <connor.tumbleson@gmail.com>
+ *  Copyright (C) 2019 Ryszard Wiśniewski <brut.alll@gmail.com>
+ *  Copyright (C) 2019 Connor Tumbleson <connor.tumbleson@gmail.com>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -99,16 +99,19 @@ final public class AndrolibResources {
             throws AndrolibException {
         int id = 0;
         int value = 0;
+        int index = 0;
 
-        for (ResPackage resPackage : pkgs) {
+        for (int i = 0; i < pkgs.length; i++) {
+            ResPackage resPackage = pkgs[i];
             if (resPackage.getResSpecCount() > value && ! resPackage.getName().equalsIgnoreCase("android")) {
                 value = resPackage.getResSpecCount();
                 id = resPackage.getId();
+                index = i;
             }
         }
 
         // if id is still 0, we only have one pkgId which is "android" -> 1
-        return (id == 0) ? pkgs[0] : pkgs[1];
+        return (id == 0) ? pkgs[0] : pkgs[index];
     }
 
     public ResPackage loadFrameworkPkg(ResTable resTable, int id, String frameTag)
@@ -167,22 +170,19 @@ final public class AndrolibResources {
 
         // compare resources.arsc package name to the one present in AndroidManifest
         ResPackage resPackage = resTable.getCurrentResPackage();
-        String packageOriginal = resPackage.getName();
+        String pkgOriginal = resPackage.getName();
         mPackageRenamed = resTable.getPackageRenamed();
 
         resTable.setPackageId(resPackage.getId());
-        resTable.setPackageOriginal(packageOriginal);
+        resTable.setPackageOriginal(pkgOriginal);
 
-        // 1) Check if packageOriginal === mPackageRenamed
-        // 2) Check if packageOriginal is ignored via IGNORED_PACKAGES
-        // 2a) If its ignored, make sure the mPackageRenamed isn't explicitly allowed
-        if (packageOriginal.equalsIgnoreCase(mPackageRenamed) ||
-                (Arrays.asList(IGNORED_PACKAGES).contains(packageOriginal) &&
-                ! Arrays.asList(ALLOWED_PACKAGES).contains(mPackageRenamed))) {
+        // 1) Check if pkgOriginal === mPackageRenamed
+        // 2) Check if pkgOriginal is ignored via IGNORED_PACKAGES
+        if (pkgOriginal.equalsIgnoreCase(mPackageRenamed) || (Arrays.asList(IGNORED_PACKAGES).contains(pkgOriginal))) {
             LOGGER.info("Regular manifest package...");
         } else {
-            LOGGER.info("Renamed manifest package found! Replacing " + mPackageRenamed + " with " + packageOriginal);
-            ResXmlPatcher.renameManifestPackage(new File(filePath), packageOriginal);
+            LOGGER.info("Renamed manifest package found! Replacing " + mPackageRenamed + " with " + pkgOriginal);
+            ResXmlPatcher.renameManifestPackage(new File(filePath), pkgOriginal);
         }
     }
 
@@ -633,6 +633,8 @@ final public class AndrolibResources {
                 return ResConfigFlags.SDK_OREO;
             case "P":
                 return ResConfigFlags.SDK_P;
+            case "Q":
+                return ResConfigFlags.SDK_Q;
             default:
                 return Integer.parseInt(sdkVersion);
         }
@@ -924,17 +926,6 @@ final public class AndrolibResources {
             } else {
                 path = parentPath.getAbsolutePath() + String.format("%1$s.local%1$sshare%1$sapktool%1$sframework", File.separatorChar);
             }
-
-            File fullPath = new File(path);
-
-            if (! fullPath.canWrite()) {
-                LOGGER.severe(String.format("WARNING: Could not write to (%1$s), using %2$s instead...",
-                        fullPath.getAbsolutePath(), System.getProperty("java.io.tmpdir")));
-                LOGGER.severe("Please be aware this is a volatile directory and frameworks could go missing, " +
-                        "please utilize --frame-path if the default storage directory is unavailable");
-
-                path = new File(System.getProperty("java.io.tmpdir")).getAbsolutePath();
-            }
         }
 
         File dir = new File(path);
@@ -953,6 +944,17 @@ final public class AndrolibResources {
                     LOGGER.severe("Can't create Framework directory: " + dir);
                 }
                 throw new AndrolibException("Can't create directory: " + dir);
+            }
+        }
+
+        if (apkOptions.frameworkFolderLocation == null) {
+            if (! dir.canWrite()) {
+                LOGGER.severe(String.format("WARNING: Could not write to (%1$s), using %2$s instead...",
+                        dir.getAbsolutePath(), System.getProperty("java.io.tmpdir")));
+                LOGGER.severe("Please be aware this is a volatile directory and frameworks could go missing, " +
+                        "please utilize --frame-path if the default storage directory is unavailable");
+
+                dir = new File(System.getProperty("java.io.tmpdir"));
             }
         }
 
@@ -1012,9 +1014,6 @@ final public class AndrolibResources {
     private boolean mSparseResources = false;
 
     private final static String[] IGNORED_PACKAGES = new String[] {
-            "android", "com.htc", "miui", "com.lge", "com.lge.internal", "yi", "com.miui.core", "flyme",
-            "air.com.adobe.appentry", "FFFFFFFFFFFFFFFFFFFFFF" };
-
-    private final static String[] ALLOWED_PACKAGES = new String[] {
-            "com.miui" };
+            "android", "com.htc", "com.lge", "com.lge.internal", "yi", "flyme", "air.com.adobe.appentry",
+            "FFFFFFFFFFFFFFFFFFFFFF" };
 }
